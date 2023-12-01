@@ -8,12 +8,12 @@ pub fn part1(lines: Vec<String>) -> u32 {
                 .chars()
                 .filter(|c| c.is_numeric())
                 .into_iter()
-                .map(|c| c.to_digit(10).unwrap()).collect();
+                .map(|c| c.to_digit(10).unwrap())
+                .collect();
             let d1 = digits.first().unwrap();
             let d2 = digits.last().unwrap();
-            10 * d1 + d2    
-            }
-        )
+            10 * d1 + d2
+        })
         .sum::<u32>();
 
     return result;
@@ -23,16 +23,19 @@ pub fn part2(lines: Vec<String>) -> u32 {
     let r_forward = Regex::new(r"(one|two|three|four|five|six|seven|eight|nine|[0-9]).*").unwrap();
     let r_reverse = Regex::new(r"(eno|owt|eerht|ruof|evif|xis|neves|thgie|enin|[0-9]).*").unwrap();
 
-    let result = lines.iter().map(|l| {
-        let c1 = r_forward.captures(&l).unwrap();
-        let temp = reverse_string(l);
-        let c2 = r_reverse.captures(&temp).unwrap();
+    let result = lines
+        .iter()
+        .map(|l| {
+            let c1 = r_forward.captures(&l).unwrap();
+            let temp = reverse_string(l);
+            let c2 = r_reverse.captures(&temp).unwrap();
 
-        let d1 = forward_to_digit(&c1[1]);
-        let d2 = reverse_to_digit(&c2[1]);
+            let d1 = forward_to_digit(&c1[1]);
+            let d2 = reverse_to_digit(&c2[1]);
 
-        return 10 * d1 + d2
-    }).sum();
+            return 10 * d1 + d2;
+        })
+        .sum();
 
     return result;
 }
@@ -53,8 +56,8 @@ fn forward_to_digit(s: &str) -> u32 {
             "eight" => 8,
             "nine" => 9,
             "zero" => 0,
-            _ => panic!("Don't know what this number is: {}", s)
-        }
+            _ => panic!("Don't know what this number is: {}", s),
+        };
     };
 }
 
@@ -79,8 +82,8 @@ mod tests {
         let result = part1(test_lines);
 
         assert_eq!(result, 142);
-    }  
-    
+    }
+
     #[test]
     fn part_2() -> () {
         let test_input: String = String::from("two1nine\neightwothree\nabcone2threexyz\nxtwone3four\n4nineeightseven2\nzoneight234\n7pqrstsixteen");
@@ -88,5 +91,5 @@ mod tests {
         let result = part2(test_lines);
 
         assert_eq!(result, 281);
-    }  
+    }
 }

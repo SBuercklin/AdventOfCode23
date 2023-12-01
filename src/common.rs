@@ -1,6 +1,6 @@
 use std::error;
-use std::fs::read_to_string;
 use std::fmt;
+use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -28,7 +28,7 @@ pub fn fname_to_string(f: &str) -> String {
     return read_to_string(f).unwrap();
 }
 
-pub fn fname_to_lines(f: &str)  -> Vec<String> {
+pub fn fname_to_lines(f: &str) -> Vec<String> {
     return string_to_lines(&fname_to_string(&f));
 }
 
@@ -36,7 +36,7 @@ pub fn string_to_lines(s: &str) -> Vec<String> {
     return s.lines().map(String::from).collect();
 }
 
-/* 
+/*
    Error types
 */
 
