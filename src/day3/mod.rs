@@ -135,7 +135,7 @@ fn populate_number_id_pairs(
     numbers: Vec<HashSet<Number>>,
     ids: Vec<Identifier>,
 ) -> Vec<NumberIDPair> {
-    // Given a list of sets of Numbers, one for each line, as well as the 
+    // Given a list of sets of Numbers, one for each line, as well as the
     //     list of Indentifiers, compute the list of all Number-Identifier pairs
     let mut combined_lines: HashSet<Number> = combine_sets(numbers.into());
     let mut results: Vec<NumberIDPair> = vec![];
