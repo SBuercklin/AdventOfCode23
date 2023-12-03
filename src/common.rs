@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::error;
 use std::fmt;
 use std::fs::read_to_string;
@@ -34,6 +35,21 @@ pub fn fname_to_lines(f: &str) -> Vec<String> {
 
 pub fn string_to_lines(s: &str) -> Vec<String> {
     return s.lines().map(String::from).collect();
+}
+
+/*
+    Set operations
+*/
+
+pub fn combine_sets<T: Eq + std::hash::Hash + Copy>(v: Vec<HashSet<T>>) -> HashSet<T> {
+    let mut return_set: HashSet<T> = HashSet::new();
+    for set in v {
+        for el in set {
+            return_set.insert(el);
+        }
+    }
+
+    return return_set;
 }
 
 /*
