@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::error;
 use std::fmt;
 use std::fs::read_to_string;
+use std::hash::Hash;
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -50,6 +51,18 @@ pub fn combine_sets<T: Eq + std::hash::Hash + Copy>(v: Vec<HashSet<T>>) -> HashS
     }
 
     return return_set;
+}
+
+pub fn intersect_sets<T: Eq + Hash + Copy>(a: HashSet<T>, b: HashSet<T>) -> HashSet<T> {
+    let mut c: HashSet<T> = HashSet::new();
+
+    for v in a.iter() {
+        if b.contains(v) {
+            c.insert(*v);
+        }
+    }
+
+    return c;
 }
 
 /*
