@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct HalfInterval {

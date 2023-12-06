@@ -1,10 +1,12 @@
+#![allow(dead_code)]
+
 use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
     character::complete::{alpha1, digit1},
     multi::many1,
     sequence::{preceded, separated_pair, tuple},
-    IResult, Parser,
+    IResult,
 };
 
 use crate::half_interval::HalfInterval;
@@ -58,7 +60,7 @@ struct SeedMap {
 
 impl SeedMap {
     fn new(from: String, to: String, ranges: Vec<SeedRange>) -> SeedMap {
-        let mut ranges = ranges.to_owned();
+        let ranges = ranges.to_owned();
         return SeedMap { from, to, ranges };
     }
     fn find_destinations(&self, src: HalfInterval) -> Vec<HalfInterval> {
