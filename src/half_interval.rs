@@ -17,17 +17,24 @@ impl HalfInterval {
     pub fn lb(&self) -> u32 {
         self.lb
     }
-    pub fn ub(&self) -> u32 {
-        self.lb + self.range
-    }
     pub fn delta(&self) -> u32 {
         self.range
     }
     pub fn intersect(&self, other: &HalfInterval) -> Option<HalfInterval> {
-        if self.lb() < other.ub() && other.lb() < self.ub() {
-            let new_lb = max(self.lb, other.lb);
-            let new_range = min(self.ub(), other.ub()) - new_lb;
-            return Some(HalfInterval::new(new_lb, new_range));
+        // Order the
+        let (left, right) = if self.lb() < other.lb() {
+            (self, other)
+        } else {
+            (other, self)
+        };
+
+        let dlb = right.lb() - left.lb();
+        let overlap = dlb < left.delta();
+
+        if overlap {
+            let left_end = right.lb();
+            let new_delta = min(left.delta() - dlb, right.delta());
+            return Some(HalfInterval::new(left_end, new_delta));
         } else {
             return None;
         }
@@ -47,25 +54,29 @@ impl HalfInterval {
                     (None, Some(*self))
                 }
             }
-            Some(remove) => {
-                if remove == *self {
+            Some(inter) => {
+                // The intersection is exact
+                if inter == *self {
                     (None, None)
                 } else {
-                    let lb_inter = remove.lb();
-                    let ub_inter = remove.ub();
-
-                    let left = if lb_inter != self.lb() {
-                        Some(HalfInterval::new(self.lb(), lb_inter - self.lb()))
-                    } else {
-                        None
-                    };
-                    let right = if ub_inter != self.ub() {
-                        Some(HalfInterval::new(ub_inter, self.ub() - ub_inter))
-                    } else {
-                        None
+                    let inter_lb = inter.lb();
+                    let left_delta = inter_lb - self.lb();
+                    let left = match left_delta {
+                        0 => None,
+                        v => Some(HalfInterval::new(self.lb, v + 1)),
                     };
 
-                    (left, right)
+                    let remaining_da = self.delta() - left_delta;
+                    let right = if remaining_da <= inter.delta() {
+                        None
+                    } else {
+                        // NOTE: THIS LINE MAY CAUSE ISSUES, MAYBE?
+                        let new_lb = inter_lb + inter.delta();
+                        let new_delta = remaining_da - inter.delta();
+                        Some(HalfInterval::new(new_lb, new_delta))
+                    };
+                    return (left, right);
+                    // (left, right)
                 }
             }
         };
@@ -80,22 +91,22 @@ mod tests {
 
     #[test]
     fn test_int() {
-        let a = HalfInterval::new(1, 10);
-        let b = HalfInterval::new(2, 9);
+        let a = HalfInterval::new(1, 9);
+        let b = HalfInterval::new(2, 7);
 
-        assert_eq!(HalfInterval::new(2, 9), a.intersect(&b).unwrap());
+        assert_eq!(HalfInterval::new(2, 7), a.intersect(&b).unwrap());
         assert_eq!(a, a.intersect(&a).unwrap());
     }
 
     #[test]
     fn test_diff() {
-        let a = HalfInterval::new(1, 10);
-        let b = HalfInterval::new(3, 5);
+        let a = HalfInterval::new(1, 9);
+        let b = HalfInterval::new(3, 2);
 
         let (l, r) = a.diff(&b);
 
         assert_eq!(HalfInterval::new(1, 3), l.unwrap());
-        assert_eq!(HalfInterval::new(5, 10), r.unwrap());
+        assert_eq!(HalfInterval::new(5, 5), r.unwrap());
 
         assert_eq!((None, None), a.diff(&a));
     }
