@@ -5,36 +5,29 @@ pub struct HalfInterval {
     /// A half-open interval [lb, ub) over integers
     /// This means that [1, 2) only represents the digit 1
     lb: u32,
-    ub: u32,
+    range: u32,
 }
 impl HalfInterval {
-    pub fn new(lb: u32, ub: u32) -> HalfInterval {
-        return HalfInterval { lb, ub };
-    }
-    pub fn from_lb_length(lb: u32, l: u32) -> HalfInterval {
-        return HalfInterval::new(lb, lb + l);
+    pub fn new(lb: u32, range: u32) -> HalfInterval {
+        return HalfInterval { lb, range };
     }
     pub fn shift(&self, delta: i32) -> HalfInterval {
-        return HalfInterval::new(
-            (self.lb as i32 + delta) as u32,
-            (self.ub as i32 + delta) as u32,
-        );
+        return HalfInterval::new((self.lb as i32 + delta) as u32, self.range);
     }
     pub fn lb(&self) -> u32 {
         self.lb
     }
     pub fn ub(&self) -> u32 {
-        self.ub
+        self.lb + self.range
     }
     pub fn delta(&self) -> u32 {
-        self.ub - self.lb
+        self.range
     }
     pub fn intersect(&self, other: &HalfInterval) -> Option<HalfInterval> {
-        if self.lb < other.ub && other.lb < self.ub {
-            return Some(HalfInterval::new(
-                max(self.lb, other.lb),
-                min(self.ub, other.ub),
-            ));
+        if self.lb() < other.ub() && other.lb() < self.ub() {
+            let new_lb = max(self.lb, other.lb);
+            let new_range = min(self.ub(), other.ub()) - new_lb;
+            return Some(HalfInterval::new(new_lb, new_range));
         } else {
             return None;
         }
@@ -58,16 +51,16 @@ impl HalfInterval {
                 if remove == *self {
                     (None, None)
                 } else {
-                    let lb_inter = remove.lb;
-                    let ub_inter = remove.ub;
+                    let lb_inter = remove.lb();
+                    let ub_inter = remove.ub();
 
-                    let left = if lb_inter != self.lb {
-                        Some(HalfInterval::new(self.lb, lb_inter))
+                    let left = if lb_inter != self.lb() {
+                        Some(HalfInterval::new(self.lb(), lb_inter - self.lb()))
                     } else {
                         None
                     };
-                    let right = if ub_inter != self.ub {
-                        Some(HalfInterval::new(ub_inter, self.ub))
+                    let right = if ub_inter != self.ub() {
+                        Some(HalfInterval::new(ub_inter, self.ub() - ub_inter))
                     } else {
                         None
                     };
