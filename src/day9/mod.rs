@@ -34,9 +34,12 @@ fn propagate_diffs(diffs: Vec<Vec<i64>>, v: &Vec<i64>) -> i64 {
     return v.last().unwrap() + last;
 }
 
-fn get_diff_vecs(v: &Vec<i64>) -> Vec<Vec<i64>> {
+fn get_diff_vecs<T>(v: &Vec<T>) -> Vec<Vec<T>>
+where
+    T: Clone + Copy + std::ops::Sub<Output = T> + PartialEq,
+{
     let mut cvec = v.to_owned();
-    let mut retvecs: Vec<Vec<i64>> = vec![];
+    let mut retvecs: Vec<Vec<T>> = vec![];
     while !vec_const(&cvec) {
         let diff_vec = vec_diff(&cvec);
         retvecs.push(diff_vec.clone());
@@ -59,7 +62,10 @@ fn vec_diff<T: std::ops::Sub<Output = T> + Copy>(v: &Vec<T>) -> Vec<T> {
     return retvec;
 }
 
-fn append_from_diff(v: &mut Vec<i64>, diff: i64) -> &Vec<i64> {
+fn append_from_diff<T>(v: &mut Vec<T>, diff: T) -> &Vec<T>
+where
+    T: std::ops::Add<Output = T> + Copy,
+{
     let last = v.last().unwrap();
     v.push(*last + diff);
 
@@ -67,17 +73,20 @@ fn append_from_diff(v: &mut Vec<i64>, diff: i64) -> &Vec<i64> {
 }
 
 fn vec_zero(v: &Vec<i64>) -> bool {
-    vec_eq_const(v, 0)
+    vec_eq_const(v, &0)
 }
 
-fn vec_const(v: &Vec<i64>) -> bool {
-    let first = *v.first().unwrap();
+fn vec_const<T: PartialEq>(v: &Vec<T>) -> bool {
+    let first = v.first().unwrap();
     return vec_eq_const(v, first);
 }
 
-fn vec_eq_const(v: &Vec<i64>, c: i64) -> bool {
+fn vec_eq_const<T>(v: &Vec<T>, c: &T) -> bool
+where
+    T: PartialEq,
+{
     for el in (&v[1..]).iter() {
-        if !(el.eq(&c)) {
+        if !((*c).eq(el)) {
             return false;
         }
     }
