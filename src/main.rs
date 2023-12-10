@@ -93,6 +93,11 @@ fn entry(
             2 => day9::part2(lines),
             _ => return Err(NotImplementedError.into()),
         }),
+        10 => Box::new(match part {
+            1 => day10::part1(lines),
+            2 => day10::part2(lines),
+            _ => return Err(NotImplementedError.into()),
+        }),
         _ => return Err(NotImplementedError.into()),
     };
 
