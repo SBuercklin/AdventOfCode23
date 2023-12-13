@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use crate::parsers::{comma_separated, space_separated};
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 /*
  Entry
@@ -34,7 +34,7 @@ pub fn part2(lines: Vec<String>) -> u64 {
 
     let result = solve_problem(expanded_results);
 
-    return 1;
+    return result;
 }
 
 /*
@@ -92,9 +92,9 @@ fn solve_problem(line_results: Vec<(Vec<Spring>, Vec<u64>)>) -> u64 {
     let line_counts: Vec<u64> = line_results
         .iter()
         .map(|(springs, count)| {
-            let mut visisted: HashSet<String> = HashSet::new();
+            let mut visited: HashMap<(String, u64), u64> = HashMap::new();
             let prefix: Vec<Spring> = vec![];
-            solve_line(springs, count, &prefix)
+            solve_line(springs, count, &prefix, &mut visited)
         })
         .collect();
 
@@ -103,7 +103,17 @@ fn solve_problem(line_results: Vec<(Vec<Spring>, Vec<u64>)>) -> u64 {
     return line_counts.iter().sum();
 }
 
-fn solve_line(springs: &Vec<Spring>, counts: &Vec<u64>, prefix: &Vec<Spring>) -> u64 {
+fn solve_line(
+    springs: &Vec<Spring>,
+    counts: &Vec<u64>,
+    prefix: &Vec<Spring>,
+    mut cache: &mut HashMap<(String, u64), u64>,
+) -> u64 {
+    let key = (visualize_springs(springs), counts.iter().sum());
+    match cache.get(&key) {
+        Some(v) => return *v,
+        None => (),
+    };
     // debug_springs_counts(springs, counts);
     // debug_springs(prefix);
 
@@ -115,8 +125,10 @@ fn solve_line(springs: &Vec<Spring>, counts: &Vec<u64>, prefix: &Vec<Spring>) ->
             // let mut lp = prefix.to_owned();
             // lp.append(&mut local);
             // debug_springs(&lp);
+            cache.insert(key, 1);
             return 1;
         } else {
+            cache.insert(key, 0);
             return 0;
         }
     };
@@ -128,6 +140,7 @@ fn solve_line(springs: &Vec<Spring>, counts: &Vec<u64>, prefix: &Vec<Spring>) ->
 
     // If the current streak exceeds the length of remaining springs, return 0, it doesn't fit
     if c > n_springs {
+        cache.insert(key, 0);
         return 0;
     };
 
@@ -147,7 +160,7 @@ fn solve_line(springs: &Vec<Spring>, counts: &Vec<u64>, prefix: &Vec<Spring>) ->
             let mut nprefix = prefix.to_owned();
             nprefix.append(&mut mprefix);
 
-            acc += solve_line(&springs[c..].to_vec(), &vec![], &nprefix);
+            acc += solve_line(&springs[c..].to_vec(), &vec![], &nprefix, cache);
         } else if n_springs >= c + 2 && !springs[c].must_be_broken() {
             // need at least 2 more springs to make a second streak fit, and we need the next
             // spring to be working
@@ -162,6 +175,7 @@ fn solve_line(springs: &Vec<Spring>, counts: &Vec<u64>, prefix: &Vec<Spring>) ->
                 &springs[(c + 1)..].to_vec(),
                 &counts[1..].to_vec(),
                 &nprefix,
+                cache,
             );
         }
     }
@@ -173,8 +187,9 @@ fn solve_line(springs: &Vec<Spring>, counts: &Vec<u64>, prefix: &Vec<Spring>) ->
         let mut nprefix = prefix.to_owned();
         nprefix.append(&mut mprefix);
 
-        acc += solve_line(&springs[1..].to_vec(), counts, &nprefix);
+        acc += solve_line(&springs[1..].to_vec(), counts, &nprefix, cache);
     }
+    cache.insert(key, acc);
     return acc;
 }
 
@@ -224,16 +239,16 @@ mod tests {
     use super::*;
     use crate::common::string_to_lines;
 
-    // #[test]
-    // fn part1_test() {
-    //     let string_input = "???.### 1,1,3\n.??..??...?##. 1,1,3\n?#?#?#?#?#?#?#? 1,3,1,6\n????.#...#... 4,1,1\n????.######..#####. 1,6,5\n?###???????? 3,2,1"
-    //         .to_string();
-    //     let line_input = string_to_lines(&string_input);
+    #[test]
+    fn part1_test() {
+        let string_input = "???.### 1,1,3\n.??..??...?##. 1,1,3\n?#?#?#?#?#?#?#? 1,3,1,6\n????.#...#... 4,1,1\n????.######..#####. 1,6,5\n?###???????? 3,2,1"
+            .to_string();
+        let line_input = string_to_lines(&string_input);
 
-    //     let result = part1(line_input);
+        let result = part1(line_input);
 
-    //     assert_eq!(result, 21);
-    // }
+        assert_eq!(result, 21);
+    }
     #[test]
     fn part1_test_tough_str() {
         let string_input = "??#?#????#..???????? 5,1,4,2".to_string();
@@ -244,15 +259,15 @@ mod tests {
         assert_eq!(result, 9);
     }
 
-    // #[test]
-    // fn part2_test() {
-    //     let string_input = "...#......\n.......#..\n#.........\n..........\n......#...\n.#........\n.........#\n..........\n.......#..\n#...#.....".to_string();
-    //     let line_input = string_to_lines(&string_input);
+    #[test]
+    fn part2_test() {
+        let string_input = "???.### 1,1,3\n.??..??...?##. 1,1,3\n?#?#?#?#?#?#?#? 1,3,1,6\n????.#...#... 4,1,1\n????.######..#####. 1,6,5\n?###???????? 3,2,1";
+        let line_input = string_to_lines(&string_input);
 
-    //     let result = logic(line_input.clone(), 9);
-    //     assert_eq!(result, 1030);
+        let line_input = string_to_lines(&string_input);
 
-    //     let result = logic(line_input, 99);
-    //     assert_eq!(result, 8410);
-    // }
+        let result = part2(line_input);
+
+        assert_eq!(result, 525152);
+    }
 }
