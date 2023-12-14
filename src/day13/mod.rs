@@ -22,18 +22,18 @@ impl Square {
 }
 
 pub fn part1(lines: Vec<String>) -> u64 {
-    let a = input_to_mats(lines);
+    let a = input_to_mats(&lines);
     return a
-        .iter()
-        .map(|mat| reflect_and_check_cols(mat, 0) + 100 * reflect_and_check_rows(mat, 0))
+        .into_iter()
+        .map(|mat| reflect_and_check_cols(&mat, 0) + 100 * reflect_and_check_rows(&mat, 0))
         .sum();
 }
 
 pub fn part2(lines: Vec<String>) -> u64 {
-    let a = input_to_mats(lines);
+    let a = input_to_mats(&lines);
     return a
-        .iter()
-        .map(|mat| reflect_and_check_cols(mat, 1) + 100 * reflect_and_check_rows(mat, 1))
+        .into_iter()
+        .map(|mat| reflect_and_check_cols(&mat, 1) + 100 * reflect_and_check_rows(&mat, 1))
         .sum();
 }
 
@@ -78,23 +78,19 @@ fn count_diff_vec<T: Eq>(a: Vec<&T>, b: Vec<&T>) -> u64 {
         .sum();
 }
 
-fn input_to_mats(lines: Vec<String>) -> Vec<AoCMatrix<Square>> {
-    return lines
-        .to_owned()
-        .split(|s| s.is_empty())
-        .map(|lines| {
-            let square_vecs: Vec<Vec<Square>> = lines
-                .iter()
-                .map(|line| {
-                    line.chars()
-                        .into_iter()
-                        .map(Square::new)
-                        .collect::<Vec<Square>>()
-                })
-                .collect();
-            AoCMatrix::from_rows(square_vecs)
-        })
-        .collect();
+fn input_to_mats(lines: &Vec<String>) -> impl Iterator<Item = AoCMatrix<Square>> + '_ {
+    return lines.split(|s| s.is_empty()).map(|lines| {
+        let square_vecs: Vec<Vec<Square>> = lines
+            .iter()
+            .map(|line| {
+                line.chars()
+                    .into_iter()
+                    .map(Square::new)
+                    .collect::<Vec<Square>>()
+            })
+            .collect();
+        AoCMatrix::from_rows(square_vecs)
+    });
 }
 
 #[cfg(test)]
