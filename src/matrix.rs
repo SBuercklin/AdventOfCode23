@@ -1,6 +1,12 @@
 #![allow(dead_code)]
 
-use std::ops::Index;
+use core::fmt;
+use std::{
+    fmt::Display,
+    ops::{Index, IndexMut},
+};
+
+use itertools::Itertools;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct AoCMatrix<T>
@@ -38,6 +44,14 @@ where
             .map(|c| c.into_iter().collect())
             .collect();
     }
+    pub fn rows_mut(&mut self) -> Vec<Vec<&mut T>> {
+        return self
+            .data
+            .chunks_mut(self.cols)
+            .map(|c| c.iter_mut().collect())
+            .collect();
+    }
+
     pub fn cols(&self) -> Vec<Vec<&T>> {
         let mut cols: Vec<Vec<&T>> = vec![];
         for c in 0..self.cols {
@@ -47,6 +61,22 @@ where
             }
             cols.push(v);
         }
+        return cols;
+    }
+    pub fn cols_mut(&mut self) -> Vec<Vec<&mut T>> {
+        let mut cols: Vec<Vec<&mut T>> = vec![];
+        for _ in 0..self.cols {
+            cols.push(vec![]);
+        }
+
+        let mut data = self.data.iter_mut();
+
+        for _ in 0..self.rows {
+            for c in 0..self.cols {
+                cols[c].push(data.next().unwrap());
+            }
+        }
+
         return cols;
     }
 }
@@ -63,6 +93,33 @@ where
         let idx = row * cols + col;
 
         return &self.data[idx];
+    }
+}
+
+impl<T> IndexMut<(usize, usize)> for AoCMatrix<T>
+where
+    T: std::clone::Clone,
+{
+    fn index_mut(&mut self, pair: (usize, usize)) -> &mut Self::Output {
+        let (row, col) = pair;
+        let cols = self.cols;
+        let idx = row * cols + col;
+        println!("{}", &idx);
+
+        return &mut self.data[idx];
+    }
+}
+
+impl<T: Clone + Display> Display for AoCMatrix<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.rows()
+                .iter()
+                .map(|r| r.iter().map(|c| c.to_string()).join(""))
+                .join("\n")
+        )
     }
 }
 
