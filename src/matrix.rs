@@ -37,6 +37,19 @@ where
 
         return AoCMatrix { data, rows, cols };
     }
+    pub fn get_data(&self) -> &Vec<T> {
+        &self.data
+    }
+    pub fn n_rows(&self) -> usize {
+        self.rows
+    }
+    pub fn n_cols(&self) -> usize {
+        self.cols
+    }
+    pub fn in_mat(&self, pos: (usize, usize)) -> bool {
+        return pos.0 < self.rows && pos.1 < self.cols;
+    }
+
     pub fn rows(&self) -> Vec<Vec<&T>> {
         return self
             .data
@@ -81,6 +94,24 @@ where
     }
 }
 
+impl<T: Copy> AoCMatrix<T> {
+    pub fn rows_by_value(&self) -> Vec<Vec<T>> {
+        return self.data.chunks(self.cols).map(|c| c.into()).collect();
+    }
+
+    pub fn cols_by_value(&self) -> Vec<Vec<T>> {
+        let mut cols: Vec<Vec<T>> = vec![];
+        for c in 0..self.cols {
+            let mut v = vec![];
+            for r in 0..self.rows {
+                v.push(self[(r, c)]);
+            }
+            cols.push(v);
+        }
+        return cols;
+    }
+}
+
 impl<T> Index<(usize, usize)> for AoCMatrix<T>
 where
     T: std::clone::Clone,
@@ -104,7 +135,6 @@ where
         let (row, col) = pair;
         let cols = self.cols;
         let idx = row * cols + col;
-        println!("{}", &idx);
 
         return &mut self.data[idx];
     }
