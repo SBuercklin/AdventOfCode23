@@ -7,94 +7,121 @@ use std::collections::BinaryHeap;
 type HEAP = BinaryHeap<Reverse<DijkstraState>>;
 type BOARD = AoCMatrix<usize>;
 type POSITION = (usize, usize);
-type MOVESTATE = (POSITION, Move);
 
 /*
     Types
 */
 
-#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy, Ord, PartialOrd)]
-enum Move {
-    North(usize),
-    South(usize),
-    East(usize),
-    West(usize),
-    NoMove,
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+struct Move {
+    position: POSITION,
+    direction: Direction,
+    min: usize,
+    max: usize,
+    current: usize,
 }
 
 impl Move {
-    fn left(&self) -> Move {
-        match self {
-            Move::North(_) => Move::West(1),
-            Move::South(_) => Move::East(1),
-            Move::East(_) => Move::North(1),
-            Move::West(_) => Move::South(1),
-            Move::NoMove => todo!(),
-        }
-    }
-    fn right(&self) -> Move {
-        match self {
-            Move::North(_) => Move::East(1),
-            Move::South(_) => Move::West(1),
-            Move::East(_) => Move::South(1),
-            Move::West(_) => Move::North(1),
-            Move::NoMove => todo!(),
-        }
-    }
-    fn forward(&self) -> Option<Move> {
-        match self {
-            Move::North(i) => {
-                if i >= &3 {
-                    None
-                } else {
-                    Some(Move::North(i + 1))
-                }
-            }
-            Move::South(i) => {
-                if i >= &3 {
-                    None
-                } else {
-                    Some(Move::South(i + 1))
-                }
-            }
-            Move::East(i) => {
-                if i >= &3 {
-                    None
-                } else {
-                    Some(Move::East(i + 1))
-                }
-            }
-            Move::West(i) => {
-                if i >= &3 {
-                    None
-                } else {
-                    Some(Move::West(i + 1))
-                }
-            }
-            Move::NoMove => todo!(),
-        }
-    }
-    fn step(&self, p: POSITION) -> Option<POSITION> {
-        let (row, col) = p;
-        return match self {
-            Move::North(_) => {
-                if row > 0 {
-                    Some((row - 1, col))
-                } else {
-                    None
-                }
-            }
-            Move::South(_) => Some((row + 1, col)),
-            Move::West(_) => {
-                if col > 0 {
-                    Some((row, col - 1))
-                } else {
-                    None
-                }
-            }
-            Move::East(_) => Some((row, col + 1)),
-            Move::NoMove => todo!(),
+    fn new(
+        current: usize,
+        position: POSITION,
+        direction: Direction,
+        min: usize,
+        max: usize,
+    ) -> Move {
+        return Move {
+            current,
+            position,
+            direction,
+            min,
+            max,
         };
+    }
+    fn new_from_zero(position: POSITION, direction: Direction, min: usize, max: usize) -> Move {
+        return Move {
+            current: 0,
+            position,
+            direction,
+            min,
+            max,
+        };
+    }
+    fn step(&self) -> Option<Move> {
+        if self.current == self.max {
+            return None;
+        }
+        match self.direction {
+            Direction::North => {
+                if self.position.0 == 0 {
+                    return None;
+                }
+            }
+            Direction::West => {
+                if self.position.1 == 0 {
+                    return None;
+                }
+            }
+            _ => (),
+        };
+        let cur_pos = self.position;
+        let new_pos = match self.direction {
+            Direction::North => (cur_pos.0 - 1, cur_pos.1),
+            Direction::South => (cur_pos.0 + 1, cur_pos.1),
+            Direction::East => (cur_pos.0, cur_pos.1 + 1),
+            Direction::West => (cur_pos.0, cur_pos.1 - 1),
+        };
+
+        return Some(Move::new(
+            self.current + 1,
+            new_pos,
+            self.direction,
+            self.min,
+            self.max,
+        ));
+    }
+    fn left(&self) -> Option<Move> {
+        return if self.can_stop() {
+            Move::new_from_zero(self.position, self.direction.left(), self.min, self.max).step()
+        } else {
+            None
+        };
+    }
+    fn right(&self) -> Option<Move> {
+        return if self.can_stop() {
+            Move::new_from_zero(self.position, self.direction.right(), self.min, self.max).step()
+        } else {
+            None
+        };
+    }
+    fn can_stop(&self) -> bool {
+        return self.min <= self.current;
+    }
+}
+
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy, Ord, PartialOrd)]
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+impl Direction {
+    fn left(&self) -> Direction {
+        match self {
+            Direction::North => Direction::West,
+            Direction::South => Direction::East,
+            Direction::East => Direction::North,
+            Direction::West => Direction::South,
+        }
+    }
+    fn right(&self) -> Direction {
+        match self {
+            Direction::North => Direction::East,
+            Direction::South => Direction::West,
+            Direction::East => Direction::South,
+            Direction::West => Direction::North,
+        }
     }
 }
 
@@ -104,16 +131,14 @@ struct DijkstraState {
     /// position is the current index
     /// move_to_here is the movement that brought us into this square
     val_to_here: usize,
-    position: POSITION,
-    move_to_here: Move,
+    current_move: Move,
 }
 
 impl DijkstraState {
-    fn new(val_to_here: usize, position: POSITION, move_to_here: Move) -> DijkstraState {
+    fn new(val_to_here: usize, move_to_here: Move) -> DijkstraState {
         return DijkstraState {
             val_to_here,
-            position,
-            move_to_here,
+            current_move: move_to_here,
         };
     }
 }
@@ -125,14 +150,31 @@ impl DijkstraState {
 pub fn part1(lines: Vec<String>) -> usize {
     let board = parse_input(&lines);
     let mut heap = HEAP::new();
-    push_to_heap(DijkstraState::new(0, (0, 0), Move::East(0)), &mut heap);
+    push_to_heap(
+        DijkstraState::new(0, Move::new_from_zero((0, 0), Direction::East, 1, 3)),
+        &mut heap,
+    );
 
     let tgt = (board.n_rows() - 1, board.n_cols() - 1);
 
     return dijkstra(&mut heap, &board, tgt);
 }
+
 pub fn part2(lines: Vec<String>) -> usize {
-    return 1;
+    let board = parse_input(&lines);
+    let mut heap = HEAP::new();
+    push_to_heap(
+        DijkstraState::new(0, Move::new_from_zero((0, 0), Direction::East, 4, 10)),
+        &mut heap,
+    );
+    push_to_heap(
+        DijkstraState::new(0, Move::new_from_zero((0, 0), Direction::South, 4, 10)),
+        &mut heap,
+    );
+
+    let tgt = (board.n_rows() - 1, board.n_cols() - 1);
+
+    return dijkstra(&mut heap, &board, tgt);
 }
 
 /*
@@ -151,56 +193,32 @@ fn parse_input(input: &Vec<String>) -> BOARD {
     return AoCMatrix::from_rows(row_ints);
 }
 
-fn heat_loss_init(input: &BOARD) -> BOARD {
-    let rows = input.n_rows();
-    let cols = input.n_cols();
-
-    let mut row_dummy = vec![];
-    for _ in 0..cols {
-        row_dummy.push(usize::MAX);
-    }
-
-    let mut row_vecs = vec![];
-    for _ in 0..rows {
-        row_vecs.push(row_dummy.clone());
-    }
-
-    return AoCMatrix::from_rows(row_vecs);
-}
-
 /*
  Business Logic
 */
 
 fn dijkstra(heap: &mut HEAP, board: &BOARD, target: POSITION) -> usize {
-    let mut visited: HashSet<(POSITION, Move)> = HashSet::new();
+    let mut visited: HashSet<Move> = HashSet::new();
     while let Some(Reverse(state)) = heap.pop() {
-        let pos = state.position;
+        let cmove = state.current_move;
+        let pos = cmove.position;
 
-        if state.position == target {
+        if pos == target && cmove.can_stop() {
             return state.val_to_here;
         }
-        let left = state.move_to_here.left();
-        let right = state.move_to_here.right();
-        let forward = state.move_to_here.forward();
+        let left = cmove.left();
+        let right = cmove.right();
+        let forward = cmove.step();
 
-        let left_move = left.step(pos);
-        let right_move = right.step(pos);
-        let forward_move = match forward {
-            None => None,
-            Some(mv) => mv.step(pos),
-        };
+        let mvs = [left, right, forward];
 
-        for (mv, newpos) in [
-            (left, left_move),
-            (right, right_move),
-            (forward.unwrap_or(Move::NoMove), forward_move),
-        ] {
-            if let Some(pos) = newpos {
-                if board.in_mat(pos) && visited.get(&(pos, mv)).is_none() {
-                    visited.insert((pos, mv));
-                    let new_val = state.val_to_here + board[pos];
-                    push_to_heap(DijkstraState::new(new_val, pos, mv), heap);
+        for opt_mv in mvs {
+            if let Some(mv) = opt_mv {
+                let new_pos = mv.position;
+                if board.in_mat(new_pos) && visited.get(&mv).is_none() {
+                    visited.insert(mv);
+                    let new_val = state.val_to_here + board[new_pos];
+                    push_to_heap(DijkstraState::new(new_val, mv), heap);
                 }
             }
         }
@@ -225,7 +243,6 @@ mod tests {
     #[test]
     fn part1_test() {
         let string_input = "2413432311323\n3215453535623\n3255245654254\n3446585845452\n4546657867536\n1438598798454\n4457876987766\n3637877979653\n4654967986887\n4564679986453\n1224686865563\n2546548887735\n4322674655533".to_string();
-        // let string_input = "2413\n3215\n3255".to_string();
         let line_input = string_to_lines(&string_input);
 
         let result = part1(line_input);
@@ -233,13 +250,24 @@ mod tests {
         assert_eq!(result, 102);
     }
 
-    // #[test]
-    // fn part2_test() {
-    //     let string_input = ".|...\\....\n|.-.\\.....\n.....|-...\n........|.\n..........\n.........\\\n..../.\\\\..\n.-.-/..|..\n.|....-|.\\\n..//.|....".to_string();
-    //     let line_input = string_to_lines(&string_input);
+    #[test]
+    fn part2_test() {
+        let string_input = "2413432311323\n3215453535623\n3255245654254\n3446585845452\n4546657867536\n1438598798454\n4457876987766\n3637877979653\n4654967986887\n4564679986453\n1224686865563\n2546548887735\n4322674655533".to_string();
+        let line_input = string_to_lines(&string_input);
 
-    //     let result = part2(line_input);
+        let result = part2(line_input);
 
-    //     assert_eq!(result, 51);
-    // }
+        assert_eq!(result, 94);
+    }
+
+    #[test]
+    fn part2_test_extra() {
+        let string_input =
+            "111111111111\n999999999991\n999999999991\n999999999991\n999999999991".to_string();
+        let line_input = string_to_lines(&string_input);
+
+        let result = part2(line_input);
+
+        assert_eq!(result, 71);
+    }
 }
