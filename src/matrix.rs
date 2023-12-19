@@ -37,6 +37,10 @@ where
 
         return AoCMatrix { data, rows, cols };
     }
+    pub fn filled_matrix(x: T, rows: usize, cols: usize) -> AoCMatrix<T> {
+        let data = vec![x; rows * cols];
+        return AoCMatrix { data, rows, cols };
+    }
     pub fn get_data(&self) -> &Vec<T> {
         &self.data
     }
