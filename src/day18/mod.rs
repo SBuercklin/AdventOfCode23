@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use std::cmp::max;
+use std::collections::HashSet;
 use std::fmt::Display;
 use std::iter::zip;
 
@@ -68,7 +69,7 @@ struct Command {
     color: Color,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum Direction {
     Up,
     Down,
@@ -76,7 +77,19 @@ enum Direction {
     Right,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+impl Direction {
+    fn from_char(c: char) -> Direction {
+        match c {
+            'U' => Direction::Up,
+            'D' => Direction::Down,
+            'L' => Direction::Left,
+            'R' => Direction::Right,
+            _ => panic!(),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 struct VerticalLine {
     top: i64,
     bot: i64,
@@ -100,17 +113,6 @@ struct HorizontalLine {
 pub fn part1(lines: Vec<String>) -> i64 {
     let cmds: Vec<Command> = lines.iter().map(parse_line).collect();
     return solve(cmds);
-    // let (mut board, p0) = build_board(&cmds);
-
-    // dig_board_from_cmds(&mut board, &cmds, p0);
-    // flood_fill_exterior(&mut board);
-
-    // return board
-    //     .get_data()
-    //     .iter()
-    //     .filter(|s| **s != Square::Outside)
-    //     .collect::<Vec<&Square>>()
-    //     .len();
 }
 
 pub fn part2(lines: Vec<String>) -> i64 {
@@ -123,16 +125,28 @@ pub fn part2(lines: Vec<String>) -> i64 {
 */
 
 fn solve(cmds: Vec<Command>) -> i64 {
-    let (horz, verts) = cmds_to_lines(cmds);
+    let (horz, mut verts) = cmds_to_lines(cmds);
     let maxy = verts.iter().map(|v| v.top).max().unwrap();
     let miny = verts.iter().map(|v| v.bot).min().unwrap();
+
+    let mut adjacency = HashSet::new();
+    adjacency.insert((*verts.first().unwrap(), *verts.last().unwrap()));
+    adjacency.insert((*verts.last().unwrap(), *verts.first().unwrap()));
+    for i in 0..(verts.len() - 1) {
+        let a = verts[i];
+        let b = verts[i + 1];
+        adjacency.insert((a, b));
+        adjacency.insert((b, a));
+    }
+
+    verts.sort_by(|a, b| a.x.cmp(&b.x));
 
     let mut acc = horz.iter().map(|h| h.length).sum();
 
     for row in miny..=maxy {
         let mut cacc = 0;
-        let mut inside = false; // We start outside
-        let mut coming_out_of_horiz_edge = false;
+        let mut next_step_counts = true; // We start outside
+        let mut prev_step_counted = false;
         let lverts: Vec<&VerticalLine> = verts.iter().filter(|v| v.intersects(row)).collect();
         for i in 0..lverts.len() {
             if i == lverts.len() - 1 {
@@ -140,27 +154,26 @@ fn solve(cmds: Vec<Command>) -> i64 {
             } else {
                 let a = lverts[i];
                 let b = lverts[i + 1];
-                let mut should_count_delta = false;
+                let adjacent = adjacency.get(&(*a, *b)).is_some();
 
+                // By default, count the first
                 cacc += 1;
 
-                if (a.top == row && a.top == b.top) || (a.bot == row && a.bot == b.bot) {
-                    // insideness doesn't change
-                    coming_out_of_horiz_edge = true;
-                } else if ((a.top == row && a.top == b.bot) || (a.bot == row && a.bot == b.top)) {
-                    // We're crossing a gap
-                    should_count_delta = coming_out_of_horiz_edge && inside;
-                    inside = !inside;
-                    coming_out_of_horiz_edge = true;
+                if adjacent
+                    && ((a.top == row && a.top == b.top) || (a.bot == row && a.bot == b.bot))
+                {
+                    next_step_counts = !next_step_counts;
+                } else if adjacent
+                    && ((a.top == row && a.top == b.bot) || (a.bot == row && a.bot == b.top))
+                {
                 } else {
-                    should_count_delta = true;
-                    coming_out_of_horiz_edge = false;
-                };
-                if should_count_delta {
-                    cacc += b.x - a.x - 1;
-                    inside = !inside;
-                    coming_out_of_horiz_edge = false;
-                };
+                    if next_step_counts {
+                        cacc += b.x - a.x - 1;
+                        next_step_counts = false;
+                    } else {
+                        next_step_counts = true;
+                    }
+                }
             }
         }
         acc += cacc;
@@ -174,7 +187,8 @@ fn cmds_to_lines(cmds: Vec<Command>) -> (Vec<HorizontalLine>, Vec<VerticalLine>)
     let mut verts = vec![];
     let mut horiz = vec![];
 
-    for c in cmds.iter() {
+    for i in 0..cmds.len() {
+        let c = cmds[i];
         let old_pos = cpos.clone();
         let dist = c.distance as i64;
         match c.direction {
@@ -209,8 +223,6 @@ fn cmds_to_lines(cmds: Vec<Command>) -> (Vec<HorizontalLine>, Vec<VerticalLine>)
             _ => (),
         }
     }
-
-    verts.sort_by(|v1, v2| v1.x.cmp(&v2.x));
 
     return (horiz, verts);
 }
@@ -277,20 +289,15 @@ mod tests {
         assert_eq!(result, 62);
     }
 
-    // #[test]
-    // fn shoelace() {
-    //     assert_eq!(shoelace_pts(&vec![(0, 0), (2, 0), (2, 2), (0, 2)]), 4);
-    // }
+    #[test]
+    fn part1_test_by_hand() {
+        let string_input = "R 9 (#70c710)\nD 3 (#0dc571)\nL 3 (#5713f0)\nD 3 (#d2c081)\nL 3 (#59c680)\nU 3 (#411b91)\nL 5 (#8ceee2)\nU 2 (#caa173)\nL 1 (#1b58a2)\nU 2 (#caa171)\nR 2 (#7807d2)\nU 3 (#a77fa3)\nL 2 (#015232)\nU 2 (#7a21e3)".to_string();
+        let line_input = string_to_lines(&string_input);
 
-    // #[test]
-    // fn hand_test() {
-    //     let string_input = "R 6 (#70c710)\nD 2 (#0dc571)\nL 6 (#5713f0)\nU 2 (#d2c081)".to_string();
-    //     let line_input = string_to_lines(&string_input);
+        let result = part1(line_input);
 
-    //     let result = part1(line_input);
-
-    //     assert_eq!(result, 4);
-    // }
+        assert_eq!(result, 62);
+    }
 
     // #[test]
     // fn part2_test() {
