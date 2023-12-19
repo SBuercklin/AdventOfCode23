@@ -94,6 +94,8 @@ struct VerticalLine {
     top: i64,
     bot: i64,
     x: i64,
+    bot_dir: Direction,
+    top_dir: Direction,
 }
 
 impl VerticalLine {
@@ -189,6 +191,8 @@ fn cmds_to_lines(cmds: Vec<Command>) -> (Vec<HorizontalLine>, Vec<VerticalLine>)
 
     for i in 0..cmds.len() {
         let c = cmds[i];
+        let next_cmd = cmds[i + 1 % cmds.len()];
+        let prev_cmd = cmds[(i + cmds.len() - 1) % cmds.len()];
         let old_pos = cpos.clone();
         let dist = c.distance as i64;
         match c.direction {
@@ -199,6 +203,8 @@ fn cmds_to_lines(cmds: Vec<Command>) -> (Vec<HorizontalLine>, Vec<VerticalLine>)
                         top: cpos.1,
                         bot: old_pos.1,
                         x: cpos.0,
+                        bot_dir: Direction::from_char(prev_cmd.direction),
+                        top_dir: Direction::from_char(next_cmd.direction),
                     })
                 }
             }
@@ -209,6 +215,8 @@ fn cmds_to_lines(cmds: Vec<Command>) -> (Vec<HorizontalLine>, Vec<VerticalLine>)
                         top: old_pos.1,
                         bot: cpos.1,
                         x: cpos.0,
+                        bot_dir: Direction::from_char(next_cmd.direction),
+                        top_dir: Direction::from_char(prev_cmd.direction),
                     })
                 }
             }
