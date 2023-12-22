@@ -38,3 +38,12 @@ test day1::tests::part_2 ... ok
 Specific projects I found useful in tackling these problems:
 
 - [`nom.rs`](https://github.com/rust-bakery/nom) for parsing input
+- [`itertools.rs`](https://docs.rs/itertools/latest/itertools/) does what it says on the box
+- [`clap.rs`](https://docs.rs/clap/latest/clap/) for the CLI/argument parsing/etc
+- [`num.rs`](https://docs.rs/num/latest/num/) for some number-type traits. Specifically useful for `Integer` trait
+
+## TODO:
+
+- [ ] CI for formatting, linting
+- [ ] CI for running tests
+- [ ] Finish the remainder of the AoC23
